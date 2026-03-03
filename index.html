@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurora Cloud Ultimate v2</title>
+<style>
+body{font-family:"Segoe UI",sans-serif;margin:0;padding:0;background:linear-gradient(135deg,#ffafbd,#ffc3a0,#2193b0,#6dd5ed);color:white;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+h1,h2,h3{margin:10px 0;text-align:center;}
+input,textarea,select{width:90%;padding:10px;margin:10px 0;border-radius:12px;border:none;}
+button{padding:10px 20px;margin:10px;border:none;border-radius:12px;cursor:pointer;background:#fff;color:#333;font-weight:bold;}
+button:hover{transform:scale(1.05);transition:0.2s;box-shadow:0 0 10px #fff;}
+img,video,audio{display:block;max-width:200px;margin:10px auto;}
+.hidden{display:none;}
+.container{width:100%;max-width:600px;}
+</style>
+</head>
+<body>
+<h1 id="welcome">Login</h1>
+<div class="container">
+
+  <!-- Login -->
+  <div id="loginSection">
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPass" placeholder="Password">
+    <button onclick="loginUser()">Login</button>
+    <div id="loginMsg"></div>
+  </div>
+
+  <!-- Admin -->
+  <div id="adminSection" class="hidden">
+    <h2>Admin Panel 👑</h2>
+    
+    <h3>Upload Photo</h3>
+    <input type="file" id="photoInput">
+    <button onclick="uploadPhoto()">Upload Photo</button>
+    <div id="photoMsg"></div>
+
+    <h3>Upload Music</h3>
+    <input type="file" id="musicInput">
+    <button onclick="uploadMusic()">Upload Music</button>
+    <div id="musicMsg"></div>
+
+    <h3>Upload Video</h3>
+    <input type="file" id="videoInput">
+    <button onclick="uploadVideo()">Upload Video</button>
+    <div id="videoMsg"></div>
+
+    <h3>Edit Text for Cassie</h3>
+    <textarea id="crushText" placeholder="Write your message here..."></textarea>
+    <button onclick="updateText()">Update Text</button>
+    <div id="textMsg"></div>
+
+    <h3>Crush Replies:</h3>
+    <div id="crushReplies"></div>
+
+    <h3>Delete Media</h3>
+    <input type="text" id="deletePhotoName" placeholder="Photo filename to delete">
+    <button onclick="deletePhoto()">Delete Photo</button>
+    <div id="deletePhotoMsg"></div>
+
+    <input type="text" id="deleteMusicName" placeholder="Music filename to delete">
+    <button onclick="deleteMusic()">Delete Music</button>
+    <div id="deleteMusicMsg"></div>
+
+    <input type="text" id="deleteVideoName" placeholder="Video filename to delete">
+    <button onclick="deleteVideo()">Delete Video</button>
+    <div id="deleteVideoMsg"></div>
+  </div>
+
+  <!-- Crush -->
+  <div id="crushSection" class="hidden">
+    <h2>Cassie Dashboard 💖</h2>
+    <div id="textMsgCrush"></div>
+    <div id="photoContainer"></div>
+    <div id="musicContainer"></div>
+    <div id="videoContainer"></div>
+
+    <h3>Reply to Admin:</h3>
+    <textarea id="replyText" placeholder="Type your reply..."></textarea>
+    <button onclick="sendReply()">Send Reply</button>
+    <div id="replyMsg"></div>
+  </div>
+
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
+
+// ---- Supabase Setup ----
+const supabaseUrl = "https://qezprpaepgbkdyjirmmf.supabase.co";
+const supabaseKey = "sb_publishable_0s2dMD44iAw6euyjerSXXA_UTOaH4O8";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ---- Fixed Users ----
+const ADMIN_EMAIL = "mond@admin.com";
+const ADMIN_PASS  = "SuperSecret123";
+const CRUSH_EMAIL = "cassie@mail.com";
+const CRUSH_PASS  = "Cassie123";
+
+// ---- Auth ----
+async function loginUser(){
+  const email = document.getElementById("loginEmail").value;
+  const pass  = document.getElementById("loginPass").value;
+
+  if(email===ADMIN_EMAIL && pass===ADMIN_PASS){ showAdmin(); return; }
+  else if(email===CRUSH_EMAIL && pass===CRUSH_PASS){ showCrush(); return; }
+  else{ document.getElementById("loginMsg").innerText="Wrong email or password!"; return; }
+}
+
+function showAdmin(){ 
+  document.getElementById("loginSection").classList.add("hidden"); 
+  document.getElementById("adminSection").classList.remove("hidden"); 
+  loadReplies(); 
+}
+
+function showCrush(){ 
+  document.getElementById("loginSection").classList.add("hidden"); 
+  document.getElementById("crushSection").classList.remove("hidden"); 
+  displayText();
+  displayPhotos();
+  displayMusic();
+  displayVideos();
+}
+
+function logout(){ window.location.reload(); }
+
+// ----- Admin Functions -----
+async function uploadPhoto(){
+  const file=document.getElementById("photoInput").files[0]; if(!file){document.getElementById("photoMsg").innerText="Choose file";return;}
+  const { error } = await supabase.storage.from('media').upload('photos/'+file.name,file,{upsert:true});
+  document.getElementById("photoMsg").innerText=error?error.message:"Photo uploaded!";
+}
+
+async function uploadMusic(){
+  const file=document.getElementById("musicInput").files[0]; if(!file){document.getElementById("musicMsg").innerText="Choose file";return;}
+  const { error } = await supabase.storage.from('media').upload('music/'+file.name,file,{upsert:true});
+  document.getElementById("musicMsg").innerText=error?error.message:"Music uploaded!";
+}
+
+async function uploadVideo(){
+  const file=document.getElementById("videoInput").files[0]; if(!file){document.getElementById("videoMsg").innerText="Choose video file";return;}
+  const { error } = await supabase.storage.from('media').upload('videos/'+file.name,file,{upsert:true});
+  document.getElementById("videoMsg").innerText=error?error.message:"Video uploaded!";
+}
+
+async function updateText(){
+  const text=document.getElementById("crushText").value;if(!text){document.getElementById("textMsg").innerText="Write something";return;}
+  const { error } = await supabase.from('profiles').update({message:text}).eq('email',CRUSH_EMAIL);
+  document.getElementById("textMsg").innerText=error?error.message:"Text updated!";
+}
+
+async function loadReplies(){
+  const { data } = await supabase.from('profiles').select('replyMsg').eq('email',CRUSH_EMAIL).single();
+  if(data && data.replyMsg) document.getElementById("crushReplies").innerText=data.replyMsg;
+  setTimeout(loadReplies,10000);
+}
+
+// ----- Delete Functions -----
+async function deletePhoto(){
+  const filename=document.getElementById("deletePhotoName").value;if(!filename){document.getElementById("deletePhotoMsg").innerText="Enter filename";return;}
+  const { error } = await supabase.storage.from('media').remove(['photos/'+filename]);
+  document.getElementById("deletePhotoMsg").innerText=error?error.message:filename+" deleted!";
+}
+
+async function deleteMusic(){
+  const filename=document.getElementById("deleteMusicName").value;if(!filename){document.getElementById("deleteMusicMsg").innerText="Enter filename";return;}
+  const { error } = await supabase.storage.from('media').remove(['music/'+filename]);
+  document.getElementById("deleteMusicMsg").innerText=error?error.message:filename+" deleted!";
+}
+
+async function deleteVideo(){
+  const filename=document.getElementById("deleteVideoName").value;if(!filename){document.getElementById("deleteVideoMsg").innerText="Enter filename";return;}
+  const { error } = await supabase.storage.from('media').remove(['videos/'+filename]);
+  document.getElementById("deleteVideoMsg").innerText=error?error.message:filename+" deleted!";
+}
+
+// ----- Crush Functions -----
+async function displayText(){
+  const { data } = await supabase.from('profiles').select('message').eq('email',CRUSH_EMAIL).single();
+  if(data && data.message) document.getElementById("textMsgCrush").innerText=data.message;
+}
+
+async function displayPhotos(){
+  const { data } = await supabase.storage.from('media').list('photos');
+  if(!data) return;
+  const container=document.getElementById("photoContainer");container.innerHTML="";
+  data.forEach(f=>{
+    const url=supabase.storage.from('media').getPublicUrl('photos/'+f.name).data.publicUrl;
+    const img=document.createElement("img");img.src=url;container.appendChild(img);
+  });
+}
+
+async function displayMusic(){
+  const { data } = await supabase.storage.from('media').list('music');
+  if(!data) return;
+  const container=document.getElementById("musicContainer");container.innerHTML="";
+  data.forEach(f=>{
+    const url=supabase.storage.from('media').getPublicUrl('music/'+f.name).data.publicUrl;
+    const audio=document.createElement("audio");audio.src=url;audio.controls=true;container.appendChild(audio);
+  });
+}
+
+async function displayVideos(){
+  const { data } = await supabase.storage.from('media').list('videos');
+  if(!data) return;
+  const container=document.getElementById("videoContainer");container.innerHTML="";
+  data.forEach(f=>{
+    const url=supabase.storage.from('media').getPublicUrl('videos/'+f.name).data.publicUrl;
+    const video=document.createElement("video");
+    video.src=url;
+    video.controls=true;
+    video.width=300;
+    container.appendChild(video);
+  });
+}
+
+async function sendReply(){
+  const reply=document.getElementById("replyText").value;if(!reply){document.getElementById("replyMsg").innerText="Write something";return;}
+  const { error } = await supabase.from('profiles').update({replyMsg:reply}).eq('email',CRUSH_EMAIL);
+  document.getElementById("replyMsg").innerText=error?error.message:"Reply sent!";
+  document.getElementById("replyText").value="";
+}
+</script>
+</body>
+</html>
