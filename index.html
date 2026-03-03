@@ -85,13 +85,14 @@ img,video,audio{display:block;max-width:200px;margin:10px auto;}
   <button onclick="logout()">Logout</button>
 </div>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js";
+<!-- Supabase JS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 
-// ---- Supabase Setup ----
+<script>
+// ---- Supabase Setup (Publishable Key / RLS Enabled) ----
 const supabaseUrl = "https://qezprpaepgbkdyjirmmf.supabase.co";
 const supabaseKey = "sb_publishable_0s2dMD44iAw6euyjerSXXA_UTOaH4O8";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 // ---- Fixed Users ----
 const ADMIN_EMAIL = "mond@admin.com";
